@@ -222,9 +222,9 @@ This project is open-source and available under a custom license. Please refer t
 
 ## 👨‍💻 Author
 
-**Abhishek Kumar**  
-Computer Science Student | IoT & Full-Stack Developer  
-[GitHub](https://github.com/abhishekkumar-code30)
+**Mayank Prabhakar**  
+Computer Science Student  
+[GitHub](https://github.com/decodermayank)
 
 ---
 
