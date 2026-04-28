@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en" id="html-root">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LineSaathi – Smart Queue Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #111111;
+      --surface: #1f1f1f;
+      --border: rgba(212,175,119,0.25);
+      --text: #f0f0f0;
+      --muted: #a8a8a8;
+      --golden: #d4af77;
+      --silver: #c0c0c0;
+      --status-low: #c0c0c0;
+      --status-medium: #d4af77;
+      --status-high: #a67c5d;
+    }
+    .light-mode {
+      --bg: #f8f9fa;
+      --surface: rgba(255,255,255,0.85);
+      --border: rgba(0,0,0,0.12);
+      --text: #1f2937;
+      --muted: #6b7280;
+      --golden: #3b82f6;
+      --silver: #9ca3af;
+      --status-low: #6b7280;
+      --status-medium: #3b82f6;
+      --status-high: #1e40af;
+    }
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+    }
+    .light-mode .card {
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    .big-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(4rem, 10vw, 7.5rem);
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+    .progress-track { height: 12px; background: rgba(212,175,119,0.1); border-radius: 9999px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 9999px; transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1); }
+    .badge { padding: 0.4rem 1.1rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; }
+    .stat-card:hover { transform: translateY(-4px) scale(1.03); box-shadow: 0 20px 40px rgba(0,0,0,0.25); }
+    button, a.btn { transition: all 0.2s cubic-bezier(0.4,0,0.2,1); }
+    button:active, a.btn:active { transform: scale(0.95); }
+    .neu { box-shadow: 6px 6px 12px #0f0f0f, -6px -6px 12px #2f2f2f; }
+    .light-mode .neu { box-shadow: 6px 6px 12px #d1d5db, -6px -6px 12px #ffffff; }
+  </style>
+</head>
+<body>
+  <div class="max-w-7xl mx-auto px-6 py-8">
+    <!-- HEADER -->
+    <header class="flex items-center justify-between mb-12">
+      <div class="flex items-center gap-3">
+        <span class="text-4xl">🍲</span>
+        <div>
+          <p class="text-sm font-medium tracking-[2px] text-[var(--muted)]">COLLEGE MESS</p>
+        </div>
+      </div>
+
+      <!-- BIG TITLE IN CENTER -->
+      <div class="text-center">
+        <h1 class="text-6xl md:text-7xl font-bold tracking-[-2px] text-[var(--golden)]">LineSaathi</h1>
+        <p class="text-xs md:text-sm font-medium text-[var(--muted)] -mt-1">Real-time Queue Intelligence</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="badge bg-[var(--golden)] text-[#111] neu">LIVE</div>
+        <button id="theme-btn" onclick="toggleTheme()" 
+          class="px-6 py-3 rounded-2xl font-semibold text-sm border border-[var(--border)] neu">
+          🌙 Dark
+        </button>
+        <a href="/admin" class="px-6 py-3 rounded-2xl font-semibold text-sm border border-[var(--border)] neu">⚙️ Admin</a>
+        <a href="/download" class="px-6 py-3 rounded-2xl font-semibold text-sm border border-[var(--border)] neu">⬇ Log</a>
+      </div>
+    </header>
+
+    <!-- ROW 1 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div class="card p-10 lg:col-span-2 text-center relative overflow-hidden">
+        <span id="ghost-count" class="absolute right-8 top-8 text-[12rem] font-bold text-[var(--golden)] opacity-5 pointer-events-none">0</span>
+        <p class="uppercase text-xs tracking-[1px] text-[var(--muted)] mb-2">LIVE OCCUPANCY</p>
+        <div id="current-count" class="big-num text-[var(--golden)]">0</div>
+        <div class="w-full max-w-md mx-auto mt-6">
+          <div class="flex justify-between text-xs mb-2 text-[var(--muted)]">
+            <span id="occ-pct">0% used</span>
+            <span id="max-cap-label">Capacity: 50</span>
+          </div>
+          <div class="progress-track">
+            <div id="prog-bar" class="progress-fill bg-[var(--golden)]"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="status-card" class="card p-8 flex flex-col justify-between border-l-8 border-[var(--status-low)]">
+        <div>
+          <p class="uppercase text-xs tracking-widest text-[var(--muted)]">Crowd Status</p>
+          <div id="crowd-level" class="text-4xl font-bold mt-2">Less Crowd</div>
+          <p id="suggestion" class="text-[var(--muted)] mt-4 leading-relaxed"></p>
+        </div>
+        <div class="mt-auto pt-6 border-t border-[var(--border)]">
+          <p class="uppercase text-xs tracking-widest text-[var(--muted)]">Est. Wait Time</p>
+          <div id="wait-time" class="text-5xl font-bold font-mono text-[var(--golden)]">0 min</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 2: Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="card stat-card p-6 text-center"><p class="text-xs uppercase text-[var(--muted)]">Total Entry</p><div id="total-entry" class="text-5xl font-mono text-[var(--golden)]">0</div></div>
+      <div class="card stat-card p-6 text-center"><p class="text-xs uppercase text-[var(--muted)]">Total Exit</p><div id="total-exit" class="text-5xl font-mono text-[var(--golden)]">0</div></div>
+      <div class="card stat-card p-6 text-center"><p class="text-xs uppercase text-[var(--muted)]">Forecast (15 min)</p><div id="predicted" class="text-5xl font-mono text-[var(--silver)]">–</div></div>
+      <div class="card stat-card p-6 text-center"><p class="text-xs uppercase text-[var(--muted)]">Rush At</p><div id="rush-time" class="text-3xl font-mono text-[var(--golden)]">–</div></div>
+    </div>
+
+    <!-- ROW 3: Prediction + Best Time -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div class="card p-8">
+        <p class="uppercase text-xs tracking-widest text-[var(--muted)] mb-3">🔮 Crowd Prediction</p>
+        <p id="prediction-text" class="text-lg leading-relaxed"></p>
+      </div>
+      <div class="card p-8">
+        <p class="uppercase text-xs tracking-widest text-[var(--muted)] mb-3">🌟 Best Time to Visit Today</p>
+        <p id="best-window" class="text-xl font-semibold text-[var(--golden)]"></p>
+      </div>
+    </div>
+
+    <!-- GRAPH -->
+    <div class="card p-8">
+      <div class="flex justify-between mb-6">
+        <p class="uppercase text-xs tracking-widest text-[var(--muted)]">📈 Crowd Trend (Last 2 hours)</p>
+        <span class="text-xs text-[var(--muted)]">Live • Updates every second</span>
+      </div>
+      <canvas id="crowd-chart" height="110"></canvas>
+    </div>
+
+    <footer class="text-center text-xs text-[var(--muted)] mt-12">
+      System Active • Last Action: <span id="last-action" class="font-mono text-[var(--golden)]"></span> • 
+      Updated: <span id="last-ts" class="font-mono"></span>
+    </footer>
+  </div>
+
+  <script>
+    let darkMode = true;
+    function applyTheme(dark) {
+      darkMode = dark;
+      const html = document.getElementById('html-root');
+      const btn = document.getElementById('theme-btn');
+      if (dark) {
+        html.classList.remove('light-mode');
+        btn.textContent = '🌙 Dark';
+      } else {
+        html.classList.add('light-mode');
+        btn.textContent = '☀️ Light';
+      }
+      localStorage.setItem('ls_dark', dark ? '1' : '0');
+      if (window._crowdChart) window._crowdChart.update('none');
+    }
+    function toggleTheme() { applyTheme(!darkMode); }
+
+    function initChart() {
+      const ctx = document.getElementById('crowd-chart').getContext('2d');
+      window._crowdChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: 'People Inside', data: [], borderColor: '#d4af77', backgroundColor: 'rgba(212,175,119,0.1)', fill: true, tension: 0.4, borderWidth: 3, pointRadius: 0 }] },
+        options: {
+          responsive: true,
+          animation: { duration: 300 },
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: 'rgba(212,175,119,0.1)' }, ticks: { color: '#a8a8a8' } },
+            x: { grid: { color: 'rgba(212,175,119,0.1)' }, ticks: { color: '#a8a8a8', maxTicksLimit: 24 } }
+          }
+        }
+      });
+    }
+
+    function setColor(level_color) {
+      const map = { silver: 'var(--status-low)', medium: 'var(--status-medium)', high: 'var(--status-high)' };
+      return map[level_color] || 'var(--status-low)';
+    }
+
+    function updateDashboard() {
+      fetch('/data').then(r => r.json()).then(d => {
+        const col = setColor(d.level_color);
+        const maxCap = d.max_cap || 50;
+        const occ = Math.min(((d.current / maxCap) * 100), 100).toFixed(1);
+
+        document.getElementById('current-count').textContent = d.current;
+        document.getElementById('current-count').style.color = col;
+        document.getElementById('ghost-count').textContent = d.current;
+
+        document.getElementById('prog-bar').style.width = occ + '%';
+        document.getElementById('prog-bar').style.background = col;
+        document.getElementById('occ-pct').textContent = occ + '% used';
+        document.getElementById('max-cap-label').textContent = 'Capacity: ' + maxCap;
+
+        const card = document.getElementById('status-card');
+        const levelEl = document.getElementById('crowd-level');
+        levelEl.textContent = d.crowd_level;
+        levelEl.style.color = col;
+        card.style.borderLeftColor = col;
+
+        document.getElementById('suggestion').textContent = d.suggestion;
+        document.getElementById('wait-time').textContent = d.wait_time + ' min';
+
+        document.getElementById('total-entry').textContent = d.entry;
+        document.getElementById('total-exit').textContent = d.exit;
+        document.getElementById('predicted').textContent = d.predicted_15 >= 0 ? d.predicted_15 : '–';
+        document.getElementById('rush-time').textContent = d.rush_time || '–';
+
+        // Prediction text (fixed grammar + dynamic)
+        const peopleWord = d.predicted_15 === 1 ? "person" : "people";
+        document.getElementById('prediction-text').innerHTML = 
+          `Expected <strong>${d.predicted_15}</strong> ${peopleWord} in ~15 minutes.<br>Rush expected around <strong>${d.rush_time}</strong>.`;
+
+        document.getElementById('best-window').textContent = d.best_window;
+
+        document.getElementById('last-action').textContent = d.action;
+        document.getElementById('last-ts').textContent = d.timestamp;
+      }).catch(() => {});
+
+      // Graph
+      fetch('/history').then(r => r.json()).then(h => {
+        const c = window._crowdChart;
+        if (!c || h.length === 0) return;
+        c.data.labels = h.map(x => x.time);
+        c.data.datasets[0].data = h.map(x => x.current);
+        c.options.scales.y.max = Math.max(30, Math.ceil((document.getElementById('max-cap-label').textContent.match(/\d+/)?.[0] || 50) * 1.2));
+        c.update('none');
+      }).catch(() => {});
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('ls_dark');
+      applyTheme(saved === null ? true : saved === '1');
+      initChart();
+      updateDashboard();
+      setInterval(updateDashboard, 1000);
+    });
+  </script>
+</body>
+</html>
