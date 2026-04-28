@@ -70,14 +70,6 @@ LineSaathi/
 │   ├── index.html              (Main dashboard)
 │   ├── admin_panel.html        (Admin controls)
 │   └── admin_login.html        (Admin login)
-│
-└── static/                     ← Styling & scripts
-    ├── css/
-    │   ├── styleFP.css
-    │   ├── admin_panelSTYLE.css
-    │   └── login.css
-    └── js/
-        └── scriptFP.js
 ```
 
 ---
