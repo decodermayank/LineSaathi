@@ -1,0 +1,30 @@
+/* Base styles to match the index page theme */
+:root {
+    --bg: #111111;
+    --surface: #1f1f1f;
+    --border: rgba(212, 175, 119, 0.25);
+    --text: #f0f0f0;
+    --muted: #a8a8a8;
+    --golden: #d4af77;
+}
+
+body {
+    font-family: 'Space Grotesk', sans-serif;
+}
+
+/* Smooth transitions for interactive elements */
+a,
+button,
+input {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:active,
+a:active {
+    transform: scale(0.97);
+}
+
+/* Optional: Subtle glow for the admin panel card */
+.shadow-2xl {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
